@@ -1,88 +1,58 @@
-from typing import List
-
-from matplotlib.figure import Figure
-from matplotlib.pyplot import Axes
 from pytm import AbstractExercise
 from pytm import Latex
-from pytm import Option
 from pytm import Output
-
-from .helpers import *
-
+from src.idealGasValues.cp_values import *
+import random
 
 class Exercise(AbstractExercise):
-    def start(self, gas: float = None, temp: str = None) -> Output:
-        options: List[Option] = list(map(lambda opt: Option(opt[0], Latex(opt[1]), opt[0] == gas),
-                                         self._get_option_map()))
+    T1_vek = [400, 450, 500, 550]
+    T2_vek = [650, 700, 750, 800]
+    T1 = 0
+    T2 = 0
+    counter = 0
 
+    def start(self, Q12: float = None) -> Output:
+        if Exercise.counter == 0:
+            Exercise.T1 = random.choice(Exercise.T1_vek)
+            Exercise.T2 = random.choice(Exercise.T2_vek)
+            Exercise.counter += 1
+
+        print(Exercise.T2)
         return self.output \
-            .add_paragraph(Latex(r'''
-            Mit diesem Tool können Sie die mittlere Wärmekapazität (Cp) und Entropie-Temperaturfunktion (s0) der 
-            idealen Gase (Air, $\mathrm{N_{2}*}$, $\mathrm{N_{2}}$, $\mathrm{O_{2}}$, $\mathrm{CO_{2}}$, 
-            $\mathrm{H_{2}O}$, $\mathrm{SO_{2}}$) bei einer Temperatur zwischen -60 und 2'200 °C bestimmen. 
+            .add_paragraph(Latex(f'''
+            Luft wird bei konstantem Druck von einem Bar von {Exercise.T1} K auf {Exercise.T2} K erwärmt. Erstellen
+            Sie die Energiebilanz und  berechnen Sie die dazu nötige spezifische Wärmemenge in kJ/kg.
             ''')) \
-            .add_option_group(name='gas',
-                              label=Latex(r'Ideales Gas auswählen:'),
-                              options=options,
-                              inline=False) \
-            .add_number_field(name='temp',
-                              label=Latex(r'Tragen Sie die Temperatur ein, in °C'),
-                              value=temp,
-                              min_value=-60,
-                              max_value=2200,
-                              step=0.01) \
-            .add_action('Calculate', self.calculate)
+            .add_number_field(name='Q12',
+                              label=Latex(r'Tragen Sie hier die berechnete Wärmemenge, in kJ/kg ein.'),
+                              value=Q12) \
+            .add_action('Loesung', self.loesung)\
+            .add_action("Hint",self.hint)
 
-    def calculate(self, gas: str, temp: float) -> Output:
-        gas_config = list(filter(lambda config: config[0] == gas, self._get_option_map()))[0]
 
-        cp_command = gas_config[2]
-        cp = np.around(cp_command(temp), 4)
+    def loesung(self, Q12: str) -> Output:
+        cp_av = (Cp_ave_Air(Exercise.T1)+Cp_ave_Air(Exercise.T2))/2  # [kJ/(kg K)]
+        dh = h_ave_Air(Exercise.T2)-h_ave_Air(Exercise.T2)  # [kJ/kg] gibt selbes Resultat wie cp*dT
+        Q12_ans = cp_av*(Exercise.T2-Exercise.T1)  # [kJ]
+        score = 0
+        if abs(Q12-Q12_ans) <= 5:
+            answ = "Die spezifische Wärme wurde richtig berechnet!!\n"
+            score += 2
+        else:
+            answ = f"Die spezifische Wärme wurde falsch berechnet, die richtige Lösung ist: {round(Q12_ans)} kJ/kg"
 
-        s0_command = gas_config[3]
-        s0 = np.around(s0_command(temp), 4)
-
-        # Plotting the data
-        temp_range = np.linspace(-50, 2200, 200)  # the range of data is -60 °C  to 2'200 °C
-
-        figure: Figure = Figure()
-
-        plot1: Axes = figure.add_subplot(2, 1, 1)
-        plot1.plot(temp_range, cp_command(temp_range), label=cp_command.__name__)
-        plot1.set_title('Cp_averages from 0 °C to t(°C)')
-        plot1.set_xlabel('Final Temperature [deg C]')
-        plot1.set_ylabel('Cp_ave in kJ/(kg K)')
-        plot1.legend(loc='best')
-        plot1.grid()
-
-        plot2 = figure.add_subplot(2, 1, 2)
-        plot2.plot(temp_range, s0_command(temp_range), label=s0_command.__name__)
-        plot2.set_title('s0-Function')
-        plot2.set_xlabel('Final Temperature [deg C]')
-        plot2.set_ylabel('s0 Function in kJ/(kg K)')
-        plot2.legend(loc='best')
-        plot2.grid()
-
-        figure.tight_layout()
 
         return self.output \
-            .add_paragraph(Latex(r'''
-            Die mittlere Wärmekapazität Cp für {gas} im Bereich 0°C bis {temp} °C ist: {cp} in kJ/(kg K).
-            '''.format(gas=gas_config[1], temp=temp, cp=cp))) \
-            .add_paragraph(Latex(r'''
-            Die  Entropie-Temperaturfunktion s0 für {gas} bei {temp} °C ist: {s0} in kJ/(kg K).
-            '''.format(gas=gas_config[1], temp=temp, s0=s0))) \
-            .add_figure(figure) \
-            .add_action('Back to start', self.start, gas=gas, temp=temp)
+            .add_paragraph(Latex(f'''
+            {answ}.
+            ''')) \
+            .add_action('Back to start', self.start, Q12=Q12)
 
-    @staticmethod
-    def _get_option_map() -> list:
-        return [
-            ['Air', r'Air', Cp_ave_Air, s_abs_Air],
-            ['N2s', r'Luftstickstoff', Cp_ave_N2s, s_abs_N2s],
-            ['N2', r'$\mathrm{N_{2}}$', Cp_ave_N2, s_abs_N2],
-            ['O2', r'$\mathrm{O_{2}}$', Cp_ave_O2, s_abs_O2],
-            ['CO2', r'$\mathrm{CO_{2}}$', Cp_ave_CO2, s_abs_CO2],
-            ['H2O', r'$\mathrm{H_{2}O}$', Cp_ave_H2O, s_abs_H2O],
-            ['SO2', r'$\mathrm{SO_{2}}$', Cp_ave_SO2, s_abs_SO2],
-        ]
+    def hint(self,Q12: str) -> Output:
+        return self.output \
+            .add_paragraph(Latex(f'''
+            - Luft kann als ideales Gas betrachtet werden.\n
+            - Bei konstanem Druck, kann die Enthalpie eines idealen Gases über ide Cp-Werte berechnet werden.\n
+            - Die Cp Werte können Sie mithilfe des Anhangs A7.3 bestimmen.
+            ''')) \
+            .add_action('Back to start', self.start,Q12=Q12)
