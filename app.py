@@ -1,3 +1,3 @@
 from src import Exercise
 
-app = Exercise('f6a7f9e3-9a54-447b-b9e1-986c7fc4c57d')
+app = Exercise('d4da5c33-7e6d-49e8-926c-0b31900b6f77')
