@@ -42,6 +42,7 @@ class Exercise(AbstractExercise):
             .add_paragraph(Latex(f'''
             {answ}.
             ''')) \
+            .add_score(score) \
             .add_action('Back to start', self.start, Q12=Q12, T1=T1, T2=T2)
 
     def hint(self, Q12: float, counter: int, T1: float, T2: float) -> Output:
@@ -53,4 +54,5 @@ class Exercise(AbstractExercise):
                 \item{Die Cp Werte können Sie mithilfe des Anhangs A7.3 bestimmen.}
             \end{itemize}
             ''')) \
+            .add_image('static/Herleitung.PNG') \
             .add_action('Back to start', self.start, Q12=Q12, counter=counter, T1=T1, T2=T2)
