@@ -34,7 +34,7 @@ class Exercise(AbstractExercise):
         score = 0
         if abs(Q12 - Q12_ans) <= 5:
             answ = "Die spezifische Wärme wurde richtig berechnet!!\n"
-            score += .1
+            score += 1.0
         else:
             answ = f"Die spezifische Wärme wurde falsch berechnet, die richtige Lösung ist: {round(Q12_ans)} kJ/kg"
 
